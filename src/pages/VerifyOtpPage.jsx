@@ -1,19 +1,22 @@
 import { useState, useEffect } from "react";
 import { useAuthStore } from "../store/useAuthStore.js";
 import AuthImagePattern from "../components/AuthmagePatter.jsx";
-import { Link } from "react-router-dom";
-import { Eye, EyeOff, Loader2, MessageSquare, Sparkles, Shield, Zap, Key } from "lucide-react";
+import { Link, useNavigate } from "react-router-dom";
+import { Loader2, Key, Shield, Sparkles, Zap, Mail } from "lucide-react";
 
-const LoginPage = () => {
-  const [showPassword, setShowPassword] = useState(false);
-  const [formData, setFormData] = useState({ email: "", password: "" });
+const VerifyOtpPage = () => {
   const [otp, setOtp] = useState("");
-  const [otpSent, setOtpSent] = useState(false);
+  const [email, setEmail] = useState("");
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
-  const [isFocused, setIsFocused] = useState({ email: false, password: false, otp: false });
-  const { login, sendOtpLogin, verifyOtpLogin, isLoggingIn } = useAuthStore();
+  const [isFocused, setIsFocused] = useState({ otp: false });
+  const { verifyOtpLogin, isLoggingIn } = useAuthStore();
+  const navigate = useNavigate();
 
   useEffect(() => {
+    const savedEmail = localStorage.getItem("otpEmail");
+    if (!savedEmail) navigate("/login"); // Redirect if email not saved
+    else setEmail(savedEmail);
+
     const handleMouseMove = (e) => {
       setMousePosition({
         x: (e.clientX / window.innerWidth) * 100,
@@ -22,18 +25,17 @@ const LoginPage = () => {
     };
     window.addEventListener("mousemove", handleMouseMove);
     return () => window.removeEventListener("mousemove", handleMouseMove);
-  }, []);
-
-  const handleSendOtp = async () => {
-    if (!formData.email) return alert("Enter your email");
-    const success = await sendOtpLogin(formData.email);
-    if (success) setOtpSent(true);
-  };
+  }, [navigate]);
 
   const handleVerifyOtp = async () => {
-    if (!otp) return alert("Enter the OTP");
-    const success = await verifyOtpLogin(formData.email, otp);
-    if (!success) return alert("Invalid OTP");
+    if (!otp) return alert("Enter OTP");
+    const success = await verifyOtpLogin(email, otp);
+    if (success) {
+      alert("OTP Verified! Logged in successfully.");
+      navigate("/dashboard"); // Redirect to dashboard
+    } else {
+      alert("Invalid OTP. Try again.");
+    }
   };
 
   return (
@@ -86,89 +88,43 @@ const LoginPage = () => {
               }}
             >
               <div className="text-center mb-10">
-                <div className="flex flex-col items-center gap-4 group">
-                  <div className="relative">
-                    <div className="absolute -inset-4 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-full blur-xl opacity-30 group-hover:opacity-50 transition-opacity duration-500"></div>
-                    <div className="relative size-16 rounded-xl bg-gradient-to-br from-gray-800 to-gray-900 border border-blue-500/30 flex items-center justify-center shadow-2xl group-hover:shadow-blue-500/40 transition-all duration-500 group-hover:scale-110 group-hover:rotate-3">
-                      <MessageSquare className="w-8 h-8 text-blue-400 group-hover:scale-110 transition-transform duration-300" />
-                      <Sparkles className="absolute -top-1 -right-1 w-4 h-4 text-cyan-400 opacity-0 group-hover:opacity-100 transition-opacity" />
-                    </div>
-                  </div>
-                  <div>
-                    <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-400 via-cyan-300 to-purple-400 bg-clip-text text-transparent">
-                      Welcome Back
-                    </h1>
-                    <p className="text-gray-400 mt-2">Sign in with OTP</p>
-                  </div>
-                </div>
+                <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-400 via-cyan-300 to-purple-400 bg-clip-text text-transparent">
+                  Verify OTP
+                </h1>
+                <p className="text-gray-400 mt-2">Enter the OTP sent to your email</p>
               </div>
 
-              {/* Form */}
+              {/* OTP Input */}
               <div className="space-y-7">
-                {/* Email Input */}
                 <div className="group">
                   <label className="label">
-                    <span className="label-text font-medium text-gray-300">Email Address</span>
+                    <span className="label-text font-medium text-gray-300">OTP</span>
                   </label>
                   <div className="relative">
                     <div
                       className={`absolute -inset-0.5 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-xl blur-lg transition-all duration-500 ${
-                        isFocused.email ? "opacity-50" : "opacity-30"
+                        isFocused.otp ? "opacity-50" : "opacity-30"
                       } group-hover:opacity-50`}
                     ></div>
                     <div className="relative">
-                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                        <Mail className={`h-5 w-5 transition-colors duration-300 ${isFocused.email ? "text-blue-400" : "text-gray-500"}`} />
-                      </div>
                       <input
-                        type="email"
-                        className={`input w-full pl-11 bg-gray-900/80 border-2 ${
-                          isFocused.email ? "border-blue-500/50" : "border-blue-500/30"
+                        type="text"
+                        className={`input w-full pl-3 bg-gray-900/80 border-2 ${
+                          isFocused.otp ? "border-blue-500/50" : "border-blue-500/30"
                         } text-white placeholder:text-gray-500 rounded-xl transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:shadow-lg focus:shadow-blue-500/20`}
-                        placeholder="you@example.com"
-                        value={formData.email}
-                        onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                        onFocus={() => setIsFocused((prev) => ({ ...prev, email: true }))}
-                        onBlur={() => setIsFocused((prev) => ({ ...prev, email: false }))}
-                        disabled={otpSent}
+                        placeholder="123456"
+                        value={otp}
+                        onChange={(e) => setOtp(e.target.value)}
+                        onFocus={() => setIsFocused((prev) => ({ ...prev, otp: true }))}
+                        onBlur={() => setIsFocused((prev) => ({ ...prev, otp: false }))}
                       />
                     </div>
                   </div>
                 </div>
 
-                {/* OTP Input */}
-                {otpSent && (
-                  <div className="group">
-                    <label className="label">
-                      <span className="label-text font-medium text-gray-300">Enter OTP</span>
-                    </label>
-                    <div className="relative">
-                      <div
-                        className={`absolute -inset-0.5 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-xl blur-lg transition-all duration-500 ${
-                          isFocused.otp ? "opacity-50" : "opacity-30"
-                        } group-hover:opacity-50`}
-                      ></div>
-                      <div className="relative">
-                        <input
-                          type="text"
-                          className={`input w-full pl-3 bg-gray-900/80 border-2 ${
-                            isFocused.otp ? "border-blue-500/50" : "border-blue-500/30"
-                          } text-white placeholder:text-gray-500 rounded-xl transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:shadow-lg focus:shadow-blue-500/20`}
-                          placeholder="123456"
-                          value={otp}
-                          onChange={(e) => setOtp(e.target.value)}
-                          onFocus={() => setIsFocused((prev) => ({ ...prev, otp: true }))}
-                          onBlur={() => setIsFocused((prev) => ({ ...prev, otp: false }))}
-                        />
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                {/* Submit / OTP Button */}
                 <button
                   type="button"
-                  onClick={otpSent ? handleVerifyOtp : handleSendOtp}
+                  onClick={handleVerifyOtp}
                   disabled={isLoggingIn}
                   className="relative group w-full py-3.5 px-6 rounded-xl text-white font-bold text-lg transition-all duration-500 overflow-hidden"
                 >
@@ -179,12 +135,12 @@ const LoginPage = () => {
                     {isLoggingIn ? (
                       <>
                         <Loader2 className="h-5 w-5 animate-spin" />
-                        <span>{otpSent ? "Verifying OTP..." : "Sending OTP..."}</span>
+                        <span>Verifying OTP...</span>
                       </>
                     ) : (
                       <>
                         <Key className="h-5 w-5 group-hover:rotate-12 transition-transform duration-300" />
-                        <span>{otpSent ? "Verify OTP" : "Send OTP"}</span>
+                        <span>Verify OTP</span>
                       </>
                     )}
                   </div>
@@ -193,12 +149,9 @@ const LoginPage = () => {
 
                 <div className="text-center pt-4 border-t border-blue-500/20">
                   <p className="text-gray-400">
-                    Don't have an account?{" "}
-                    <Link
-                      to="/signup"
-                      className="text-blue-400 hover:text-blue-300 font-medium hover:underline transition-colors inline-flex items-center gap-1 group"
-                    >
-                      Create account
+                    Didn't receive OTP?{" "}
+                    <Link to="/login" className="text-blue-400 hover:text-blue-300 font-medium hover:underline transition-colors inline-flex items-center gap-1 group">
+                      Resend
                       <Zap className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
                     </Link>
                   </p>
@@ -218,8 +171,8 @@ const LoginPage = () => {
 
       {/* Right Side - 3D Image Pattern */}
       <AuthImagePattern
-        title={"Welcome back!"}
-        subtitle={"Sign in to continue your conversations and catch up with your messages."}
+        title={"Verify OTP!"}
+        subtitle={"Enter the OTP sent to your email to access your account securely."}
       />
 
       <style jsx>{`
@@ -238,4 +191,4 @@ const LoginPage = () => {
   );
 };
 
-export default LoginPage;
+export default VerifyOtpPage;

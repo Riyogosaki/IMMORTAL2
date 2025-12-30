@@ -17,6 +17,38 @@ export const useAuthStore = create(
       onlineUsers: [],
       socket: null,
       token: null,
+otpSent: false,
+emailForOtp: null,
+
+sendOtp: async (data) => {
+  set({ isSigningUp: true });
+  try {
+    const res = await axiosInstance.post("/auth/signup", data);
+    toast.success(res.data.message);
+    set({ otpSent: true, emailForOtp: data.email });
+  } catch (error) {
+    const errorMessage = error.response?.data?.message || "Signup failed";
+    toast.error(errorMessage);
+    throw error;
+  } finally {
+    set({ isSigningUp: false });
+  }
+},
+
+verifyOtp: async (otp) => {
+  set({ isSigningUp: true });
+  try {
+    const res = await axiosInstance.post("/auth/verify-otp", { email: get().emailForOtp, otp });
+    toast.success(res.data.message);
+    set({ otpSent: false, emailForOtp: null });
+  } catch (error) {
+    const errorMessage = error.response?.data?.message || "OTP verification failed";
+    toast.error(errorMessage);
+    throw error;
+  } finally {
+    set({ isSigningUp: false });
+  }
+},
 
       checkAuth: async () => {
         try {
@@ -159,6 +191,7 @@ export const useAuthStore = create(
     }
   )
 );
+
 
 // Optional: Auto-cleanup on page unload
 if (typeof window !== "undefined") {
