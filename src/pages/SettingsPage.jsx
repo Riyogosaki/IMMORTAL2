@@ -430,6 +430,7 @@ const SettingsPage = () => {
         }
       `}</style>
     </div>
+    
   );
 };
 
